@@ -3,38 +3,62 @@ package com.example.sudoku6x6;
 import java.util.*;
 
 /**
- * Model del Sudoku 6x6 reescrito:
- * - genera tableros resolubles con exactamente 2 números por bloque 2x3
- * - comprueba unicidad de solución
- * - almacena la solución completa para usarla en la ayuda
- * - permite ingresar números (1-6) y devuelve si la entrada es válida
+ * Clase {@code Model} que gestiona toda la lógica del juego Sudoku 6x6.
+ * <p>
+ * Esta clase se encarga de:
+ * <ul>
+ *   <li>Generar tableros válidos y resolubles.</li>
+ *   <li>Garantizar que cada tablero tenga una única solución.</li>
+ *   <li>Validar los movimientos del jugador según las reglas del Sudoku.</li>
+ *   <li>Proporcionar una ayuda automática basada en la solución completa.</li>
+ *   <li>Detectar errores, verificar la finalización del juego y manejar celdas fijas.</li>
+ * </ul>
+ *
+ * El Sudoku generado tiene bloques de 2x3 celdas (6x6 total) y se construye
+ * con exactamente dos números por bloque.
  */
 public class Model {
 
+    /** Tamaño total del tablero (6x6). */
     private final int SIZE = 6;
+
+    /** Cantidad de filas por bloque (2). */
     private final int BLOCK_ROWS = 2;
+
+    /** Cantidad de columnas por bloque (3). */
     private final int BLOCK_COLS = 3;
 
-    private int[][] board;             // Tablero actual (0 = vacío)
-    private boolean[][] fixed;         // Celdas iniciales (no editables)
-    private int[][] solucionCompleta;  // Solución completa generada (para ayuda)
+    /** Representa el tablero actual del Sudoku (0 indica celda vacía). */
+    private int[][] board;
 
+    /** Indica qué celdas son fijas (no editables por el jugador). */
+    private boolean[][] fixed;
+
+    /** Solución completa generada, usada para validaciones y ayuda. */
+    private int[][] solucionCompleta;
+
+    /**
+     * Constructor por defecto.
+     * Inicializa el tablero, las celdas fijas y la solución vacía.
+     */
     public Model() {
         board = new int[SIZE][SIZE];
         fixed = new boolean[SIZE][SIZE];
         solucionCompleta = null;
     }
 
-    // ----------------------------
-    // GENERACIÓN: solución y puzzle
-    // ----------------------------
+    // ----------------------------------------------------------
+    // GENERACIÓN DEL TABLERO
+    // ----------------------------------------------------------
 
     /**
-     * Genera un tablero Sudoku 6x6 que cumple:
-     * - tiene exactamente 2 números por cada bloque 2x3
-     * - el puzzle resultante tiene única solución
-     *
-     * Intenta varias veces (limite) si no encuentra unicidad.
+     * Genera un tablero Sudoku 6x6 válido con las siguientes condiciones:
+     * <ul>
+     *   <li>Cada bloque 2x3 contiene exactamente dos números visibles.</li>
+     *   <li>El tablero tiene una única solución válida.</li>
+     * </ul>
+     * Si no logra generar un tablero único tras varios intentos, utiliza un método
+     * alternativo de respaldo que garantiza un tablero resoluble (aunque no perfecto).
      */
     public void generarTableroInicial() {
         final int MAX_INTENTOS = 2000;
@@ -44,18 +68,15 @@ public class Model {
         while (intentos < MAX_INTENTOS) {
             intentoGeneracionBasico();
 
-            // Ahora board contiene la solución completa (resolverTableroCompleto puso números)
-            // Guardamos la solución
+            // Guardar la solución completa generada
             int[][] solucionGuard = copiarMatriz(board);
 
-            // Construimos un puzzle que deje EXACTAMENTE 2 números por bloque 2x3
+            // Construir puzzle con 2 números por bloque 2x3
             int[][] puzzle = new int[SIZE][SIZE];
             for (int i = 0; i < SIZE; i++) Arrays.fill(puzzle[i], 0);
 
-            // Para cada bloque, elegimos 2 posiciones para mantener
             for (int br = 0; br < SIZE; br += BLOCK_ROWS) {
                 for (int bc = 0; bc < SIZE; bc += BLOCK_COLS) {
-                    // Lista de posiciones dentro del bloque
                     List<int[]> posiciones = new ArrayList<>();
                     for (int r = br; r < br + BLOCK_ROWS; r++) {
                         for (int c = bc; c < bc + BLOCK_COLS; c++) {
@@ -63,7 +84,6 @@ public class Model {
                         }
                     }
                     Collections.shuffle(posiciones, rnd);
-                    // Tomamos las dos primeras
                     for (int k = 0; k < 2; k++) {
                         int[] p = posiciones.get(k);
                         puzzle[p[0]][p[1]] = solucionGuard[p[0]][p[1]];
@@ -71,13 +91,11 @@ public class Model {
                 }
             }
 
-            // Comprobar que puzzle tiene al menos 1 solución (sí tendrá) y preferimos única solución
-            int soluciones = contarSoluciones(puzzle, 2); // contamos hasta 2
+            // Verificar unicidad de solución
+            int soluciones = contarSoluciones(puzzle, 2);
             if (soluciones == 1) {
-                // Aceptamos este puzzle
                 board = puzzle;
                 solucionCompleta = solucionGuard;
-                // Marcar fijas
                 for (int r = 0; r < SIZE; r++) {
                     for (int c = 0; c < SIZE; c++) {
                         fixed[r][c] = (board[r][c] != 0);
@@ -85,33 +103,31 @@ public class Model {
                 }
                 return;
             }
-
-            // Si no es único, intentamos otra vez
             intentos++;
         }
 
-        // Si se agotaron intentos, caemos a un método mas simple
-        // Generar solución completa y eliminar celdas aleatoriamente
+        // Método de respaldo si falla la generación única
         limpiarTablero();
         resolverTableroCompleto();
         solucionCompleta = copiarMatriz(board);
-        eliminarCeldas(16 + new Random().nextInt(6)); // fallback
-        for (int r = 0; r < SIZE; r++) for (int c = 0; c < SIZE; c++) fixed[r][c] = (board[r][c] != 0);
+        eliminarCeldas(16 + new Random().nextInt(6));
+        for (int r = 0; r < SIZE; r++)
+            for (int c = 0; c < SIZE; c++)
+                fixed[r][c] = (board[r][c] != 0);
     }
 
     /**
-     * Genera solución completa en 'board' (backtracking).
-     * Este método rellena board; se usa por la generación
+     * Reinicia el tablero y genera una solución completa válida mediante backtracking.
      */
     private void intentoGeneracionBasico() {
-        // inicializar vacío
         for (int i = 0; i < SIZE; i++) Arrays.fill(board[i], 0);
-        // Backtracking para llenar la solución
         resolverTableroCompleto();
     }
 
     /**
-     * Rellena completamente un tablero válido usando backtracking.
+     * Algoritmo de backtracking que genera una solución completa de Sudoku 6x6.
+     *
+     * @return {@code true} si se logró completar el tablero correctamente.
      */
     private boolean resolverTableroCompleto() {
         for (int fila = 0; fila < SIZE; fila++) {
@@ -133,13 +149,19 @@ public class Model {
         return true;
     }
 
-    // ----------------------------
-    // VALIDACIÓN / HELPER de generación
-    // ----------------------------
+    // ----------------------------------------------------------
+    // VALIDACIONES INTERNAS
+    // ----------------------------------------------------------
 
     /**
-     * Comprueba si un número es válido en una posición para un tablero dado.
-     * Utilidad interna para usar con copias temporales.
+     * Comprueba si un número puede colocarse en una posición determinada sin
+     * violar las reglas del Sudoku (filas, columnas o bloques).
+     *
+     * @param tablero tablero sobre el cual validar.
+     * @param fila    fila donde se intenta colocar el número.
+     * @param col     columna donde se intenta colocar el número.
+     * @param num     número a verificar (1-6).
+     * @return {@code true} si el número puede colocarse, {@code false} si genera conflicto.
      */
     private boolean esValidoEn(int[][] tablero, int fila, int col, int num) {
         // Fila
@@ -150,7 +172,7 @@ public class Model {
         for (int r = 0; r < SIZE; r++) {
             if (tablero[r][col] == num && r != fila) return false;
         }
-        // Bloque
+        // Bloque 2x3
         int startRow = (fila / BLOCK_ROWS) * BLOCK_ROWS;
         int startCol = (col / BLOCK_COLS) * BLOCK_COLS;
         for (int r = startRow; r < startRow + BLOCK_ROWS; r++) {
@@ -162,7 +184,10 @@ public class Model {
     }
 
     /**
-     * Copia profunda de un tablero (útil para pruebas).
+     * Crea una copia profunda del tablero dado.
+     *
+     * @param original tablero original.
+     * @return copia independiente del tablero.
      */
     private int[][] copiarMatriz(int[][] original) {
         int[][] copia = new int[SIZE][SIZE];
@@ -171,14 +196,20 @@ public class Model {
     }
 
     /**
-     * Construye y devuelve una copia del board (para pasar a comprobaciones sin tocar el original).
+     * Devuelve una copia del tablero base (usado para pruebas temporales).
+     *
+     * @param base tablero base.
+     * @return copia del tablero.
      */
     private int[][] tableroTemp(int[][] base) {
         return copiarMatriz(base);
     }
 
     /**
-     * Elimina celdas aleatoriamente del tablero actual. (fallback)
+     * Elimina celdas aleatoriamente del tablero actual.
+     * Se usa como método alternativo cuando falla la generación principal.
+     *
+     * @param cantidad número de celdas a eliminar.
      */
     private void eliminarCeldas(int cantidad) {
         Random random = new Random();
@@ -193,23 +224,34 @@ public class Model {
         }
     }
 
-    // ----------------------------
-    // CONTADOR DE SOLUCIONES (unicidad)
-    // ----------------------------
+    // ----------------------------------------------------------
+    // CONTEO DE SOLUCIONES (unicidad)
+    // ----------------------------------------------------------
 
     /**
-     * Cuenta soluciones del tablero dado hasta el límite maxCount (p. ej. 2).
-     * Devuelve el número de soluciones encontradas (si encuentra >= maxCount corta y devuelve >= maxCount).
+     * Cuenta cuántas soluciones tiene un tablero parcial hasta un máximo dado.
+     * Se usa para garantizar la unicidad del Sudoku generado.
+     *
+     * @param tableroInicial tablero parcial a evaluar.
+     * @param maxCount número máximo de soluciones a contar antes de detenerse.
+     * @return número de soluciones encontradas (cortará al llegar a {@code maxCount}).
      */
     private int contarSoluciones(int[][] tableroInicial, int maxCount) {
         int[][] t = copiarMatriz(tableroInicial);
         return contarSolucionesRec(t, maxCount, 0);
     }
 
+    /**
+     * Método recursivo que explora todas las posibles soluciones del tablero.
+     *
+     * @param tablero tablero actual.
+     * @param maxCount máximo número de soluciones que se desea encontrar.
+     * @param contadorActual contador de soluciones encontradas hasta el momento.
+     * @return cantidad total de soluciones encontradas (hasta el máximo permitido).
+     */
     private int contarSolucionesRec(int[][] tablero, int maxCount, int contadorActual) {
         if (contadorActual >= maxCount) return contadorActual;
 
-        // buscar celda vacía
         int fila = -1, col = -1;
         outer:
         for (int r = 0; r < SIZE; r++) {
@@ -221,10 +263,8 @@ public class Model {
             }
         }
 
-        // si no hay vacías, encontramos una solución
         if (fila == -1) return contadorActual + 1;
 
-        // intentar números
         for (int num = 1; num <= 6; num++) {
             if (esValidoEn(tablero, fila, col, num)) {
                 tablero[fila][col] = num;
@@ -236,51 +276,44 @@ public class Model {
         return contadorActual;
     }
 
-    // ----------------------------
-    // VALIDACIONES Y OPERACIONES PÚBLICAS
-    // ----------------------------
+    // ----------------------------------------------------------
+    // VALIDACIONES PÚBLICAS / OPERACIONES DE JUEGO
+    // ----------------------------------------------------------
 
     /**
-     * Verifica si un número es válido en la posición actual del board (usa el board actual).
-     * Pública: usada por la vista para validar en tiempo real.
+     * Verifica si un número puede colocarse en la posición indicada del tablero actual.
+     *
+     * @param fila fila de la celda.
+     * @param col columna de la celda.
+     * @param num número a validar.
+     * @return {@code true} si el número cumple las reglas del Sudoku.
      */
     public boolean esValido(int fila, int col, int num) {
-        // Fila
-        for (int c = 0; c < SIZE; c++) {
-            if (board[fila][c] == num && c != col) return false;
-        }
-        // Columna
-        for (int r = 0; r < SIZE; r++) {
-            if (board[r][col] == num && r != fila) return false;
-        }
-        // Bloque
-        int startRow = (fila / BLOCK_ROWS) * BLOCK_ROWS;
-        int startCol = (col / BLOCK_COLS) * BLOCK_COLS;
-        for (int r = startRow; r < startRow + BLOCK_ROWS; r++) {
-            for (int c = startCol; c < startCol + BLOCK_COLS; c++) {
-                if (board[r][c] == num && (r != fila || c != col)) return false;
-            }
-        }
-        return true;
+        return esValidoEn(board, fila, col, num);
     }
 
     /**
-     * Intenta colocar un número en la celda (permite que el usuario escriba 1-6).
-     * Devuelve true si la entrada es válida según reglas en ese momento, false si produce conflicto.
-     * No modifica celdas fijas.
+     * Intenta ingresar un número en una celda del tablero.
+     * Si la celda es fija o el número es inválido, no se modifica.
+     *
+     * @param fila fila de la celda.
+     * @param col columna de la celda.
+     * @param num número a colocar (1–6).
+     * @return {@code true} si la jugada es válida, {@code false} si genera conflicto.
      */
     public boolean ingresarNumero(int fila, int col, int num) {
         if (fixed[fila][col]) return false;
         if (num < 1 || num > 6) return false;
-
-        // Siempre colocamos el número (para que el usuario vea su entrada)
         board[fila][col] = num;
-        // Retornamos si en este momento es válido
         return esValido(fila, col, num);
     }
 
     /**
-     * Borra el número de la celda (si no es fija).
+     * Elimina el número de una celda (si no es fija).
+     *
+     * @param fila fila de la celda.
+     * @param col columna de la celda.
+     * @return {@code true} si se eliminó correctamente, {@code false} si es fija.
      */
     public boolean eliminarNumero(int fila, int col) {
         if (fixed[fila][col]) return false;
@@ -289,8 +322,10 @@ public class Model {
     }
 
     /**
-     * Devuelve la lista de celdas que actualmente están en conflicto.
-     * Cada elemento es un int[]{fila, col}
+     * Devuelve una lista con las coordenadas de todas las celdas erróneas,
+     * es decir, aquellas que violan las reglas del Sudoku actual.
+     *
+     * @return lista de celdas en conflicto (pares [fila, columna]).
      */
     public List<int[]> obtenerCeldasErroneas() {
         List<int[]> errores = new ArrayList<>();
@@ -304,7 +339,9 @@ public class Model {
     }
 
     /**
-     * Devuelve true si el tablero actual está completo y válido.
+     * Comprueba si el tablero está completamente lleno y cumple todas las reglas.
+     *
+     * @return {@code true} si el Sudoku está completo y válido.
      */
     public boolean tableroCompleto() {
         for (int r = 0; r < SIZE; r++) {
@@ -316,27 +353,32 @@ public class Model {
         return true;
     }
 
-    // ----------------------------
-    // AYUDA (usando la solución completa guardada)
-    // ----------------------------
+    // ----------------------------------------------------------
+    // SISTEMA DE AYUDA
+    // ----------------------------------------------------------
 
     /**
-     * Coloca automáticamente una sugerencia correcta en el tablero.
-     * Sólo se permite si quedan más de una celda vacía.
-     * Retorna true si colocó la ayuda, false si no pudo (p. ej. queda 1 o 0 vacías o no hay solución guardada).
+     * Coloca automáticamente un número correcto en una celda vacía aleatoria,
+     * usando la solución completa guardada.
+     * <p>
+     * Solo se permite si hay más de una celda vacía.
+     *
+     * @return {@code true} si se colocó una ayuda, {@code false} si no fue posible.
      */
     public boolean usarAyuda() {
-        // Debe existir una solución completa guardada
         if (solucionCompleta == null) return false;
 
         int vacias = 0;
-        for (int r = 0; r < SIZE; r++) for (int c = 0; c < SIZE; c++) if (board[r][c] == 0) vacias++;
+        for (int r = 0; r < SIZE; r++)
+            for (int c = 0; c < SIZE; c++)
+                if (board[r][c] == 0) vacias++;
 
-        if (vacias <= 1) return false; // no permitir ayuda si sólo queda 1
+        if (vacias <= 1) return false;
 
-        // Elegir una celda vacía aleatoria y colocar la solución correspondiente
         List<int[]> vacantes = new ArrayList<>();
-        for (int r = 0; r < SIZE; r++) for (int c = 0; c < SIZE; c++) if (board[r][c] == 0) vacantes.add(new int[]{r, c});
+        for (int r = 0; r < SIZE; r++)
+            for (int c = 0; c < SIZE; c++)
+                if (board[r][c] == 0) vacantes.add(new int[]{r, c});
 
         if (vacantes.isEmpty()) return false;
 
@@ -344,20 +386,19 @@ public class Model {
         for (int[] cel : vacantes) {
             int r = cel[0], c = cel[1];
             int valorCorrecto = solucionCompleta[r][c];
-            // Colocar el valor correcto
             board[r][c] = valorCorrecto;
-            // No lo marcamos fijo; el usuario podría borrarlo si lo desea
             return true;
         }
         return false;
     }
 
-    // ----------------------------
-    // UTILIDADES
-    // ----------------------------
+    // ----------------------------------------------------------
+    // UTILIDADES Y GETTERS
+    // ----------------------------------------------------------
 
     /**
-     * Limpia tablero y fijas.
+     * Limpia completamente el tablero y las celdas fijas.
+     * Deja el modelo listo para generar un nuevo Sudoku.
      */
     public void limpiarTablero() {
         board = new int[SIZE][SIZE];
@@ -365,7 +406,12 @@ public class Model {
         solucionCompleta = null;
     }
 
+    /** @return el tablero actual del Sudoku. */
     public int[][] getTablero() { return board; }
+
+    /** @return matriz que indica las celdas fijas (true = fija, false = editable). */
     public boolean[][] getFijas() { return fixed; }
+
+    /** @return tamaño del tablero (6). */
     public int getSize() { return SIZE; }
 }
