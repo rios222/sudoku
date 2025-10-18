@@ -2,7 +2,6 @@ package com.example.sudoku6x6;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -17,63 +16,47 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Controlador principal del juego Sudoku 6x6.
- *
- * Administra la interfaz grafica, los eventos del usuario y la comunicacion con la clase Model.
- * Se encarga de crear el tablero, manejar las entradas del teclado, mostrar ayudas,
- * y actualizar la vista segun el estado del juego.
+ * Controller principal del Sudoku 6x6.
+ * Maneja la interfaz, eventos y conexión con el Model.
  */
 public class Controller {
 
-    /** Contenedor grafico que representa el tablero del Sudoku. */
     @FXML
     private GridPane gridSudoku;
 
-    /** Boton para iniciar un nuevo juego. */
     @FXML
     private Button btnNuevoJuego;
 
-    /** Boton que muestra una ayuda automatica. */
     @FXML
     private Button btnAyuda;
 
-    /** Etiqueta que muestra mensajes o el estado del juego. */
     @FXML
     private Label lblEstado;
 
-    /** Instancia del modelo logico del Sudoku. */
     private Model model;
-
-    /** Matriz de etiquetas que representan visualmente cada celda del tablero. */
-    private Label[][] celdas;
-
-    /** Fila actualmente seleccionada por el usuario. */
+    private Label[][] celdas; // Representa las etiquetas visuales de las celdas
     private int filaSeleccionada = -1;
-
-    /** Columna actualmente seleccionada por el usuario. */
     private int colSeleccionada = -1;
 
-    /** Lista de coordenadas de las celdas completadas mediante la ayuda automatica. */
+    // Lista con coordenadas (fila,col) de celdas colocadas por la ayuda, para colorearlas distinto
     private final List<int[]> celdasDeAyuda = new ArrayList<>();
 
     /**
-     * Inicializa el controlador y la interfaz grafica.
-     * Crea el tablero, configura los eventos y genera un tablero inicial al iniciar la aplicacion.
+     * Inicializa el controlador.
      */
     @FXML
     public void initialize() {
         model = new Model();
+        // Si tu Model soporta getSize() dinámico puedes usarlo, aquí asumimos 6x6.
         celdas = new Label[6][6];
         crearTablero();
         configurarEventos();
+
+        // Generar y mostrar un tablero al iniciar la aplicación
         model.generarTableroInicial();
         actualizarVista();
     }
 
-    /**
-     * Crea visualmente el tablero 6x6 dentro del GridPane.
-     * Cada celda contiene un rectangulo de fondo y una etiqueta para mostrar el numero.
-     */
     private void crearTablero() {
         gridSudoku.getChildren().clear();
         gridSudoku.setAlignment(Pos.CENTER);
@@ -91,6 +74,7 @@ public class Controller {
 
                 celda.getChildren().addAll(fondo, lbl);
 
+                // Copiar índices en variables efectivamente finales para la lambda
                 final int f = fila;
                 final int c = col;
                 celda.setOnMouseClicked(e -> seleccionarCelda(f, c));
@@ -102,29 +86,33 @@ public class Controller {
     }
 
     /**
-     * Configura los eventos del teclado y los botones.
-     * Maneja la entrada de numeros, el borrado de celdas y las acciones de los botones.
+     * Configura los eventos globales (teclado y botones).
      */
     private void configurarEventos() {
-        // Evento para ingreso de numeros
+        // KeyTyped para los caracteres (números). Se requiere que el grid tenga foco (requestFocus).
         gridSudoku.addEventFilter(KeyEvent.KEY_TYPED, e -> {
             if (filaSeleccionada == -1 || colSeleccionada == -1) return;
 
             String ch = e.getCharacter();
             if (ch.matches("[1-6]")) {
                 int num = Integer.parseInt(ch);
+
+                // colocar número y obtener si es válido (Model.ingresarNumero coloca y devuelve si es válido)
                 boolean esValidoAhora = model.ingresarNumero(filaSeleccionada, colSeleccionada, num);
 
                 if (!esValidoAhora) {
-                    lblEstado.setText(" Numero invalido en esta posicion.");
+                    lblEstado.setText("⚠ Número inválido en esta posición.");
                 } else {
                     lblEstado.setText("");
                 }
+
+                // Si el usuario escribió algo en una celda que había sido marcada por ayuda, la dejamos como "usuario" (no cambiar celdasDeAyuda aquí)
                 actualizarVista();
             }
+            // KeyTyped no captura Backspace, por eso manejamos borrado en KEY_PRESSED (ver abajo).
         });
 
-        // Evento para borrar numeros
+        // KeyPressed para borrar (BACK_SPACE, DELETE) y otras teclas funcionales.
         gridSudoku.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             if (filaSeleccionada == -1 || colSeleccionada == -1) return;
 
@@ -132,42 +120,47 @@ public class Controller {
                 boolean ok = model.eliminarNumero(filaSeleccionada, colSeleccionada);
                 if (ok) {
                     lblEstado.setText("");
+                    // Si la celda estaba entre las celdas de ayuda, la removemos de esa lista (el usuario borró)
                     celdasDeAyuda.removeIf(p -> p[0] == filaSeleccionada && p[1] == colSeleccionada);
                 }
                 actualizarVista();
             }
         });
 
+        // Botón nuevo juego
         btnNuevoJuego.setOnAction(e -> nuevoJuego());
+
+        // Botón ayuda
         btnAyuda.setOnAction(e -> mostrarAyuda());
     }
 
     /**
-     * Marca una celda como seleccionada para permitir la edicion.
-     *
-     * @param fila fila seleccionada por el usuario
-     * @param col columna seleccionada por el usuario
+     * Selecciona visualmente una celda.
      */
     private void seleccionarCelda(int fila, int col) {
         filaSeleccionada = fila;
         colSeleccionada = col;
         lblEstado.setText("Celda seleccionada: (" + (fila + 1) + ", " + (col + 1) + ")");
+        // Pedir foco al grid para que reciba eventos de teclado
         gridSudoku.requestFocus();
+
+        // Actualizar vista para que la celda seleccionada se muestre con el borde
         actualizarVista();
     }
 
     /**
-     * Inicia un nuevo juego.
-     * Limpia el tablero y genera un nuevo Sudoku aleatorio.
+     * Inicia un nuevo juego (HU-2).
      */
     private void nuevoJuego() {
         Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
         alerta.setHeaderText("¿Iniciar un nuevo juego?");
-        alerta.setContentText("Se borrara el tablero actual.");
+        alerta.setContentText("Se borrará el tablero actual.");
         alerta.showAndWait().ifPresent(res -> {
             if (res == ButtonType.OK) {
+                // limpiar marcas de ayuda previas
                 celdasDeAyuda.clear();
                 model.generarTableroInicial();
+                // reset selección
                 filaSeleccionada = -1;
                 colSeleccionada = -1;
                 actualizarVista();
@@ -177,23 +170,29 @@ public class Controller {
     }
 
     /**
-     * Coloca automaticamente una sugerencia valida en una celda vacia.
-     * Si solo queda una celda vacia, la ayuda no se aplica.
+     * Usa la opción de ayuda para colocar automáticamente una sugerencia válida.
+     * No permite usarla si solo queda una celda vacía (HU-5).
+     *
+     * Detecta qué celda fue colocada comparando antes/después y la marca en celdasDeAyuda.
      */
     private void mostrarAyuda() {
+        // Copia del tablero antes de la ayuda (deep copy)
         int[][] antes = copiarTablero(model.getTablero());
+
         boolean usada = model.usarAyuda();
 
         if (!usada) {
-            lblEstado.setText(" No puedes usar mas ayuda: solo queda una celda vacia o no hay opciones validas.");
+            lblEstado.setText("⚠️ No puedes usar más ayuda: solo queda una celda vacía o no hay opciones válidas.");
             return;
         }
 
+        // buscar la diferencia entre 'antes' y 'despues' para saber qué celda colocó la ayuda
         int[][] despues = model.getTablero();
         boolean encontrada = false;
         for (int r = 0; r < 6 && !encontrada; r++) {
             for (int c = 0; c < 6; c++) {
                 if (antes[r][c] == 0 && despues[r][c] != 0) {
+                    // registrar esta celda como "colocada por ayuda"
                     celdasDeAyuda.add(new int[]{r, c});
                     encontrada = true;
                     break;
@@ -201,28 +200,35 @@ public class Controller {
             }
         }
 
-        lblEstado.setText(" Se ha colocado una sugerencia automatica en una celda vacia.");
+        lblEstado.setText("💡 Se ha colocado una sugerencia automática en una celda vacía.");
         actualizarVista();
     }
 
     /**
-     * Actualiza visualmente el tablero segun el estado actual del modelo.
-     * Aplica colores y estilos para celdas fijas, errores, ayudas y seleccionadas.
+     * Refresca toda la interfaz según el estado del modelo.
+     * Aplica estilos visuales para celdas fijas, errores, celdas de ayuda y la celda seleccionada.
      */
     private void actualizarVista() {
         int[][] tablero = model.getTablero();
         boolean[][] fijas = model.getFijas();
+
         List<int[]> errores = model.obtenerCeldasErroneas();
 
         for (int fila = 0; fila < 6; fila++) {
             for (int col = 0; col < 6; col++) {
                 Label lbl = celdas[fila][col];
                 int valor = tablero[fila][col];
+
                 lbl.setText(valor == 0 ? "" : String.valueOf(valor));
+
+                // Estilo base
                 lbl.setStyle("-fx-alignment: center; -fx-font-size: 18px;");
+
+                // Fondo y texto base (por si no es fija ni error)
                 StackPane parent = (StackPane) lbl.getParent();
                 parent.setStyle("-fx-background-color: white; -fx-border-color: lightgray;");
 
+                // Color para celdas fijas
                 if (fijas[fila][col]) {
                     lbl.setTextFill(Color.BLACK);
                     lbl.setStyle(lbl.getStyle() + "-fx-font-weight: bold;");
@@ -232,21 +238,26 @@ public class Controller {
                     lbl.setStyle(lbl.getStyle() + "-fx-font-weight: normal;");
                 }
 
+                // Copiar fila y col en variables efectivamente finales
                 final int f = fila;
                 final int c = col;
 
+               // Resaltar si es celda colocada por la ayuda
                 boolean esAyuda = celdasDeAyuda.stream().anyMatch(p -> p[0] == f && p[1] == c);
                 if (esAyuda) {
-                    parent.setStyle("-fx-background-color: #dfefff; -fx-border-color: #90b7ff;");
+                    parent.setStyle("-fx-background-color: #dfefff; -fx-border-color: #90b7ff;"); // azul claro
                     lbl.setTextFill(Color.DARKBLUE);
                 }
 
+
+                // Resaltar errores (tos los marcados por el model)
                 boolean esError = errores.stream().anyMatch(p -> p[0] == f && p[1] == c);
                 if (esError) {
                     lbl.setTextFill(Color.RED);
                     parent.setStyle("-fx-background-color: #ffd6d6; -fx-border-color: red;");
                 }
 
+                // Resaltar celda seleccionada (borde azul más claro)
                 if (fila == filaSeleccionada && col == colSeleccionada) {
                     parent.setStyle("-fx-background-color: #d9ebff; -fx-border-color: #0066cc; -fx-border-width: 2;");
                 }
@@ -255,20 +266,20 @@ public class Controller {
 
         if (model.tableroCompleto()) {
             Alert alerta = new Alert(Alert.AlertType.INFORMATION);
-            alerta.setTitle("Sudoku Completado");
-            alerta.setHeaderText("Felicidades");
+            alerta.setTitle("¡Sudoku Completado!");
+            alerta.setHeaderText("¡Felicidades!");
             alerta.setContentText("Has completado correctamente el Sudoku 6x6.");
             alerta.showAndWait();
-            lblEstado.setText("Juego completado.");
+
+            lblEstado.setText("¡Juego completado!");
         }
+
     }
 
-    /**
-     * Crea una copia del tablero actual para comparar antes y despues de aplicar una ayuda.
-     *
-     * @param src tablero original
-     * @return copia independiente del tablero original
-     */
+    // -------------------------
+    // Utils
+    // -------------------------
+
     private int[][] copiarTablero(int[][] src) {
         int size = src.length;
         int[][] copia = new int[size][size];

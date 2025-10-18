@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.sudoku6x6.Controller"
+      alignment="CENTER"
+      spacing="20"
+      style="-fx-background-color: #f5f5f5; -fx-padding: 20;">
+
+    <!-- Título del juego -->
+    <Label text="Sudoku 6x6"
+           style="-fx-text-fill: #2b2b2b; -fx-font-weight: bold;"
+    >
+        <font>
+            <Font size="28"/>
+        </font>
+    </Label>
+
+    <!-- Cuadrícula del Sudoku -->
+    <GridPane fx:id="gridSudoku"
+              alignment="CENTER"
+              hgap="2"
+              vgap="2"
+              style="-fx-border-color: #333; -fx-border-width: 2; -fx-background-color: white;"
+              prefWidth="400"
+              prefHeight="400"
+    />
+
+    <!-- Panel de botones -->
+    <HBox alignment="CENTER" spacing="15">
+        <Button fx:id="btnNuevoJuego"
+                text="Nuevo Juego"
+                style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 10;"/>
+        <Button fx:id="btnAyuda"
+                text="Ayuda"
+                style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 10;"/>
+    </HBox>
+
+    <!-- Estado del juego -->
+    <Label fx:id="lblEstado"
+           text="Bienvenido al Sudoku 6x6"
+           style="-fx-text-fill: #333; -fx-font-size: 14px;"
+           wrapText="true"
+           maxWidth="380"
+           alignment="CENTER"/>
+
+</VBox>
