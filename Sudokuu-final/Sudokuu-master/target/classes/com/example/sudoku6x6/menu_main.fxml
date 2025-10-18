@@ -12,20 +12,19 @@
       spacing="25"
       prefWidth="700"
       prefHeight="600"
-      style="-fx-background-color: linear-gradient(to bottom, #f5f5f5, #dfe9f3); -fx-padding: 40;">
+      style="-fx-background-color: linear-gradient(to bottom, #667eea, #764ba2); -fx-padding: 40;">
 
     <!-- Título -->
     <Label text="Sudoku 6x6"
-           style="-fx-text-fill: #2b2b2b; -fx-font-weight: bold;">
+           style="-fx-text-fill: #FFD700; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5, 0, 0, 2);">
         <font>
-            <Font name="Comic Sans MS" size="48.0"/>
+            <Font name="Comic Sans MS" size="56.0"/>
         </font>
     </Label>
 
     <!-- Imagen decorativa -->
     <ImageView fitHeight="180.0" fitWidth="180.0" preserveRatio="true">
         <image>
-            <!-- Ruta relativa dentro de resources -->
             <Image url="@../../../images/sudoku.gif"/>
         </image>
     </ImageView>
@@ -33,12 +32,13 @@
     <!-- Botón para iniciar el juego -->
     <Button text="Comenzar el Juego"
             onAction="#iniciarJuego"
-            style="-fx-background-color: #4CAF50;
+            style="-fx-background-color: linear-gradient(to right, #FF6B35, #F7931E);
                    -fx-text-fill: white;
                    -fx-font-weight: bold;
                    -fx-background-radius: 12;
                    -fx-font-size: 18px;
-                   -fx-padding: 10 20;">
+                   -fx-padding: 10 20;
+                   -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 0, 4);">
         <font>
             <Font name="Arial" size="18"/>
         </font>
@@ -46,6 +46,6 @@
 
     <!-- Etiqueta inferior -->
     <Label text="Haz clic para comenzar tu partida de Sudoku 6x6"
-           style="-fx-text-fill: #333; -fx-font-size: 14px; -fx-padding: 10;" />
+           style="-fx-text-fill: #FFFFFF; -fx-font-size: 14px; -fx-padding: 10; -fx-font-weight: bold;" />
 
 </VBox>

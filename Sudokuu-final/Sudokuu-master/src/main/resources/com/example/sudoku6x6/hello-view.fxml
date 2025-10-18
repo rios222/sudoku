@@ -1,16 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
 
-<?import javafx.scene.control.Button?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.sudokuversion1.HelloController">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-    </padding>
+<VBox xmlns="http://javafx.com/javafx/17.0.12"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.sudoku6x6.MenuController"
+      alignment="CENTER"
+      spacing="30"
+      prefWidth="800"
+      prefHeight="700"
+      style="-fx-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -fx-padding: 40;">
 
-    <Label fx:id="welcomeText"/>
-    <Button text="Hello!" onAction="#onHelloButtonClick"/>
+    <!-- Contenedor superior con sombra -->
+    <VBox alignment="CENTER" spacing="20" style="-fx-background-color: rgba(255, 255, 255, 0.95); -fx-background-radius: 20; -fx-padding: 40; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 20, 0, 0, 10);">
+
+        <!-- Título Principal -->
+        <Label text="SUDOKU 6x6"
+               style="-fx-text-fill: #667eea; -fx-font-weight: bold; -fx-text-alignment: center;">
+            <font>
+                <Font name="System Bold" size="56.0"/>
+            </font>
+        </Label>
+
+        <!-- Subtítulo -->
+        <Label text="Desafía tu lógica y razonamiento"
+               style="-fx-text-fill: #666666; -fx-font-size: 14px; -fx-text-alignment: center;">
+            <font>
+                <Font name="System" size="14"/>
+            </font>
+        </Label>
+
+        <!-- Línea divisoria -->
+        <Separator style="-fx-padding: 10;"/>
+
+        <!-- Imagen decorativa mejorada -->
+        <ImageView fitHeight="160.0" fitWidth="160.0" preserveRatio="true" style="-fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.4), 15, 0, 0, 5);">
+            <image>
+                <Image url="@../../../images/sudoku.gif"/>
+            </image>
+        </ImageView>
+
+        <!-- Descripción breve -->
+        <Label text="Completa el tablero 6x6 siguiendo las reglas del Sudoku"
+               style="-fx-text-fill: #555555; -fx-font-size: 12px; -fx-text-alignment: center;"
+               wrapText="true"/>
+
+    </VBox>
+
+    <!-- Contenedor de botones -->
+    <VBox alignment="CENTER" spacing="15" style="-fx-padding: 0 40;">
+
+        <!-- Botón Comenzar Juego -->
+        <Button text="▶ COMENZAR EL JUEGO"
+                onAction="#iniciarJuego"
+                prefWidth="300"
+                prefHeight="60"
+                style="-fx-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                       -fx-text-fill: white;
+                       -fx-font-weight: bold;
+                       -fx-font-size: 16px;
+                       -fx-background-radius: 15;
+                       -fx-cursor: hand;
+                       -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 5);">
+            <font>
+                <Font name="System Bold" size="16"/>
+            </font>
+        </Button>
+
+        <!-- Botón Instrucciones (futuro) -->
+        <Button text="📖 CÓMO JUGAR"
+                prefWidth="300"
+                prefHeight="50"
+                style="-fx-background-color: rgba(102, 126, 234, 0.1);
+                       -fx-text-fill: #667eea;
+                       -fx-font-weight: bold;
+                       -fx-font-size: 14px;
+                       -fx-border-color: #667eea;
+                       -fx-border-width: 2;
+                       -fx-background-radius: 12;
+                       -fx-cursor: hand;">
+            <font>
+                <Font name="System Bold" size="14"/>
+            </font>
+        </Button>
+
+    </VBox>
+
+    <!-- Pie de página -->
+    <HBox alignment="BOTTOM_CENTER" spacing="30" style="-fx-padding: 20 0 0 0;">
+        <Label text="v1.0 - Sudoku 6x6"
+               style="-fx-text-fill: rgba(255, 255, 255, 0.7); -fx-font-size: 11px;"/>
+    </HBox>
+
 </VBox>
